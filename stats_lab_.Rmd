@@ -1,0 +1,403 @@
+---
+
+title: "Stats"
+author: "Sarah Bolinger"
+date: "2023-09-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+---------------------------------------------------------------------------
+
+LAB 3: Basic statistics in R ----------------------------------------------
+
+---------------------------------------------------------------------------
+
+
+First things first: getting set up in GitHub:
+
+*Everyone will need to create an account on the github website.* 
+
+If you are using a personal laptop, you may want to install Git on your computer.
+
+*Configure Git*
+
+```{r}
+library(usethis)
+# edit_git_config()
+use_git_config(
+  user.name = "Sarah Bolinger", 
+  user.email = "sarah.bolinger@gmail.com")
+```
+
+Note how we can add <return> after lines within a function to make it easier to read. This doesn't affect how R interprets the code.
+
+```{r}
+
+```
+
+--------------------------------------------------------------------------
+LAB ACTIVITY
+--------------------------------------------------------------------------
+
+We will go through the lab in class, as we have with the previous two labs. This time, you will be changing parts of the script (the same way you would with any script to make it work for your data and your analysis). 
+
+Please *save* your work and share the file with me. 
+
+*The parts that require your input will be marked with asterisks, like this*
+
+First, we will load in the necessary packages. Researchers generally put all packages at the beginning of the script like this for consistency.
+
+("include=FALSE" just tells R not to show the output of this chunk of code.)
+
+```{r, include=FALSE}
+library(tidyverse)
+library(stats)
+library(ggpubr)
+```
+
+
+We will look at some basic statistics using a built-in dataset and data imported from GitHub.
+
+----------------------------------------------------------------------------
+STAR WARS DATA
+----------------------------------------------------------------------------
+
+Star Wars data is builtin to tidyverse. Get a preview of the first ten rows using the head function, and view the structure of the dataframe using the str function:
+
+```{r}
+head(starwars)
+str(starwars)
+```
+
+In the past two labs, we have examined our data by:
+
+1. using the table function to look at variables
+2. creating plots in ggplot2 to visualize the data
+
+Let's first use a table to examine how many Star War characters there are for each value of the height variable:
+
+```{r}
+table(starwars$height)
+table(starwars$mass)
+# starwars
+```
+
+The $ operator tells you which variable you are referring to. The numbers on top (66 to 264) represent the height values, and the number below each height value tells us how many of the characters are that height.
+
+These *frequency tables* can be difficult to read, so we will look at other options later in the code.
+
+*1.Change the code below to look at the eye_color variable instead.*
+
+```{r}
+table(starwars$height)
+
+```
+
+One commonly calculated value is the range of a variable (difference between the lowest and highest values observed):
+
+```{r}
+range(starwars$height, na.rm=TRUE) # this gives us the lowest and highest values
+
+diff(range(starwars$height, na.rm=TRUE)) # this gives us the difference
+
+```
+"na.rm=TRUE" tells R not to count rows with missing height values, which are coded as "NA". If we don't do this, we get the following unhelpful output:
+
+
+```{r}
+range(starwars$height)
+
+diff(range(starwars$height))
+```
+
+*2.What is the range of the mass variable? Edit the code below to calculate*
+
+```{r}
+
+range(starwars$height, na.rm=TRUE) # this gives us the lowest and highest values
+
+diff(range(starwars$height, na.rm=TRUE)) # this gives us the difference
+
+```
+
+
+Here we calculate another common statistical measure, the mean:
+
+```{r}
+mean(starwars$height, na.rm=TRUE)
+```
+
+How do you think you calculate the median and the mode? If you don't know, check Google!
+
+--------------------------------------------------------------------------------
+DATA VISUALIZATION
+--------------------------------------------------------------------------------
+
+Let's see if using a histogram makes the data easier to visualize:
+
+```{r}
+ggplot(starwars, aes(x=height)) +
+  geom_histogram(fill="purple")
+```
+
+
+*3.Now change the x-variable and the fill color*
+
+You can use any variable and color you like.
+
+```{r}
+ggplot(data=starwars, aes(x=height)) +
+  geom_histogram(fill="purple")
+```
+
+One last common statistical measure is the standard deviation:
+
+```{r}
+sd(starwars$height, na.rm=TRUE)
+```
+
+-------------------------------------------------------------------------------
+DISTRIBUTIONS
+-------------------------------------------------------------------------------
+
+This histogram, and the tables we looked at before, are both ways of visualizing the *distribution* of the data.
+
+Knowing the distribution of your data is important for many reasons. One important reason is that many statistical tests assume that data is normally distributed (and violating that assumption can lead to incorrect interpretations).
+
+This is what normally-distributed data looks like:
+
+```{r}
+norm_dist <- data.frame(x = rnorm(1000, mean=170, sd=5))
+
+ggplot(norm_dist, aes(x=x)) +
+  geom_histogram()
+```
+
+
+We can visually inspect the data to see if it looks normally distributed, but if we are still unsure after that, we can also use a statistical test (from the stats package) to see if our distribution is statistically different from a normal distribution:
+
+```{r}
+shapiro.test(starwars$height)
+```
+
+
+*4.Yes or no: is the height data roughly normally distributed?* 
+
+
+
+** NOTE:
+
+If you get tired of adding "na.rm=TRUE" to all your functions, you can also opt to remove the NAs from your data instead. There are multiple ways of doing this, so be sure you know *exactly* what you are removing! 
+
+(Sometimes it can help to create a separate dataset and compare it to the full dataset before NA removal).
+
+There are functions to remove all rows with missing data (NAs), but if you only care about missing data in one or a few rows, try:
+
+```{r}
+starwarsData <- starwars |> 
+  drop_na(height)
+
+```
+
+To remove *all* of the rows with missing data, you can use:
+
+```{r}
+starwarsData2 <- starwars |>
+  drop_na()
+```
+
+By removing all the rows with missing data, we have greatly reduced our sample size. This is generally not desirable, so we may want to stick to the variables we know we are interested in:
+
+```{r}
+starwarsData3 <- starwars |>
+  drop_na(height, mass)
+```
+
+
+---------------------------------------------------------------------------------
+LINEAR RELATIONSHIPS BETWEEN VARIABLES
+---------------------------------------------------------------------------------
+
+Now let's graph the relationships between some of these variables.
+
+What do you think is the relationship between height and mass of the Star Wars characters?
+
+```{r}
+
+ggplot(starwars, aes(height, mass)) + 
+  geom_point()
+
+```
+
+What is with that one point that is way outside of the range of the other points?
+
+```{r}
+starwars$name[which(starwars$mass >1000)]
+```
+
+Yes, Jabba the Hutt is what we call an *outlier*
+
+We can use our fancy dplyr pipes to filter him out from the data! Then we can pipe the filtered data directly into ggplot. Note that we still add to ggplot using the + and not a pipe.
+
+```{r}
+starwars |>
+  filter(mass < 1000) |>
+  ggplot(aes(x=height, y=mass)) +
+  geom_point()
+```
+
+That looks more like a relationship we might expect between height and mass.
+
+Let's add a trendline to visualize the linear relationship between the 2 variables. We can use the R-squared value to tell us how well the data fit a linear model.
+
+```{r}
+starwars |>
+  filter(mass < 1000) |>
+  ggplot(aes(x=height, y=mass)) +
+  geom_point() +
+  stat_smooth(method="lm",
+              formula=y~x) + 
+  # stat_regline_equation(formula=y~x) +
+  stat_regline_equation(aes(label=..rr.label..)) + 
+  stat_regline_equation(label.y=130,aes(label=..eq.label..))#label.y = vertical position
+  # stat_cor(formula=y~x)
+
+cat("R-squared value:")
+summary(lm(mass ~ height, data=starwars))$r.squared
+```
+
+Does height have a correlation with the number of movies a character has been in?
+
+```{r}
+starwars |> 
+  mutate(num_films = lengths(films)) |>
+  ggplot(aes(x=height, y=num_films)) +
+  # geom_bar(stat="identity")
+  geom_jitter() +
+  stat_smooth(method="lm",
+              formula=y~x) + 
+  
+  stat_regline_equation(aes(label=..rr.label..)) + 
+  stat_regline_equation(label.y=6,aes(label=..eq.label..)) # label.y = vertical position
+  
+
+```
+
+*5.Change the code below to look at the relationship between birth year (x) and height (y), but only for characters less than 200 cm tall.*
+
+Remember, you can edit only the parts you need to change and leave everything else if it does what you want it to.
+
+```{r}
+starwars |> 
+  filter(mass<1000)
+  ggplot(aes(x=mass, y=species)) +
+  # geom_bar(stat="identity")
+  geom_jitter() +
+  stat_smooth(method="lm",
+              formula=y~x) + 
+  
+  stat_regline_equation(aes(label=..rr.label..)) + 
+  stat_regline_equation(label.y=160,aes(label=..eq.label..)) # label.y = vertical position
+  
+
+```
+
+---------------------------------------------------------------------------------------
+ANALYZING REAL DATA
+---------------------------------------------------------------------------------------
+
+Now, we will import some data from GitHub.
+
+```{r}
+migr_data <- read_csv("bird_migration.csv")
+```
+
+*6. Create a table of migration date (migDate)*
+
+```{r}
+
+```
+
+
+*7.Pick a variable and see if it is correlated with migDate. Show me the graph that helped you decide whether or not it was correlated.*
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
