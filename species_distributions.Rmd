@@ -1,0 +1,345 @@
+---
+title: "Species Distributions"
+author: "Sarah Bolinger"
+date: "2023-08-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document.
+
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+
+We can use R to make maps of global species distributions.
+
+First, we'll load this trusty package:
+
+```{r}
+
+library(tidyverse)
+```
+
+To create our maps, we have a new package we need to use. 
+Remember what we do to load it into R?
+
+```{r}
+
+library(dismo)
+```
+
+Below I have examples of species listed as Critically Endangered on the IUCN
+RedList. We will use the gbif function from the dismo package to download worldwide species occurrence data.
+
+What are the benefits and drawbacks to using publicly-sourced data from around the globe?
+
+Pick one species below. You will see that you use the scientific name in the gbif function.
+
+*What can you do to make sure R only downloads data for one of the species when you hit the Run button?*
+
+You can comment out the other lines by adding `#` in front of them! I already did this with the bird species, which has tons of observations and would take forever to download. Add `#` to every line beginning with "species" except for the line with the species you want to look at. 
+
+*If you don't do this, you'll be downloading the data for one species and then overwriting it with the next species*
+
+```{r}
+
+# An aquatic species:
+
+species = gbif("Eubalaena", "glacialis") 
+
+
+# A terrestrial species:
+
+species <- gbif("Spilogale", "putorius")
+
+
+# An amphibian:
+
+species <- gbif("Ambystoma", "californiense")
+
+
+# A bird:
+
+#species = gbif("Diomedea", "exulans") 
+
+```
+
+Once we have the data, we can graph species occurrences per year. 
+
+Take a look at your dataframe. We can verify that it is a dataframe using:
+
+```{r}
+class(species)
+```
+
+What are the column names? Which ones will be relevant to us? 
+An easy way to see all the column names in a dataframe is:
+
+```{r}
+names(species)
+```
+
+That's a lot of information (it's actually 2 columns of names!) and we only want to use a small subset of it.
+
+Printing the names like this will help you in filtering your data, because you can tell R to use certain columns based on their names.
+
+We can also look at specific variables to see what might be useful:
+
+```{r}
+table(species$country)
+```
+
+```{r}
+table(species$year)
+```
+```{r}
+table(species$sex)
+```
+
+Which of the above variables would be most useful? Least useful?
+
+In order to select just the data we want, we will be using some data-cleaning functions from the package dplyr. This package contains all kinds of functions to manipulate, clean, and filter your data. 
+
+```{r}
+# For example, if I wanted the year, latitude, and longitude, I would use:
+
+sp_GPS <- species |> 
+  dplyr::select(year, lat, lon)
+
+# Don't panic! I will provide the code for you and you can just replace the bits you need to.
+
+```
+
+
+We'll choose to plot occurrences since 1990. First, we will select only the columns we need and filter them to the years we want. I've selected year and then a few other columns that could be interesting.
+
+```{r}
+# ************ FOR ALL SPECIES: ************************************************
+
+# select the species and year columns, and filter
+
+sp_year <- species %>%
+  dplyr::select(species, year, occurrenceID, country, month) %>%
+  filter( year >= 1990 & year < 2009)
+
+# create a new dataframe of occurrences by year
+sp_occ <- sp_year |>
+  group_by(year) |>
+  mutate(n_occ = n_distinct(occurrenceID)) %>%
+  ungroup()
+
+```
+
+What's with the |> ?
+
+These are pipes! Many people find that pipes make data analysis much easier. We are "piping" our data along to the different functions we use like group_by and filter, so we don't have to specify which data we are using again and again. For example:
+
+```{r}
+# We could do this to get the same result as above:
+
+sp_year <- subset(species, select = c("species", "year","occurrenceID", "country", "month"))
+sp_year <- sp_year[species$year >= 1990 & species$year < 2009,]
+sp_year <- sp_year[!is.na(sp_year$year),]
+
+sp_occ2 <- mutate(sp_year, .by=year, n_occ=length(species))
+
+# Looks like fun, right???
+# You also have to keep track of when to put variable names in quotes or not and other fun things
+# So instead, we will use dplyr as shown above!
+
+
+```
+
+Since we used the name "sp_year" again, R wrote over the old sp_year with what we just did. But what happened to sp_occ?
+
+The new sp_occ should be identical.
+
+---------------------------------------------------------------------------------------
+Making some graphs
+---------------------------------------------------------------------------------------
+
+In a sense, the ggplot2 package works similarly to dplyr. You create a base graph where you tell R what you want x and y to be, and then you add the elements you want.
+
+
+```{r}
+
+ggplot(data=sp_occ, aes(x=year,y=n_occ)) 
+
+```
+
+By itself, that function does nothing because it's just specifying what y and x are, and what data we are using. You need to add to the plot:
+
+
+```{r}
+
+ggplot(data=sp_occ, aes(x=year,y=n_occ)) +
+  geom_bar(stat="identity")
+  
+```
+
+Now that I chose a plot type, I can add fun colors and whatnot:
+
+```{r}
+
+ggplot(data=sp_occ, aes(x=year,y=n_occ)) +
+  geom_bar(stat="identity", fill="burlywood4")
+```
+
+You can also change the fill color to represent a variable.
+
+You might also want to add nicer labels.
+
+There are tons and tons of modifications you can do! 
+(the ggplot2 cheatsheet can be helpful)
+
+```{r}
+
+ggplot(data=sp_occ, aes(x=year,y=n_occ)) +
+  geom_bar(stat="identity", aes(fill = month)) +
+  xlab("Year") +
+  ylab("Number of Occurrences")
+```
+
+I could change the x-axis to show every year, or change how tall the y-axis is, or any number of things, but we won't get carried away today. 
+
+How does occurrence of your species vary over time?
+Does this mean the actual population varied that much?
+
+
+---------------------------------------------------------------------------------------
+Maps
+---------------------------------------------------------------------------------------
+
+And now, the fun part. Let's make a map of the species occurrences. We will need another new package, which RStudio has probably already prompted you to install.
+
+
+```{r}
+library(maps)
+library(rgdal)
+library(sf)
+
+```
+
+first we will rename "lon" to "long" and load the world map. 
+
+
+```{r}
+
+worldMap <- map_data("world")
+
+names(sp_GPS)[3] <- "long"
+
+ggplot() + 
+  geom_polygon(data=worldMap, aes(x=long, y=lat, group=group), fill="orchid3")
+
+
+
+```
+
+it's a map of the world! cool. now let's plot our species occurrence data. these are the gps locations for sightings or captures of the species.  
+
+```{r}
+
+ggplot() + 
+  geom_polygon(data=worldMap, aes(x=long, y=lat, group=group)) +
+# coord_fixed(1.3) +
+  geom_point(data=sp_GPS, aes(x=long, y=lat), color="cadetblue4")
+```
+
+What is the warning message at the top of your map? 
+
+Is it surprising that gps coordinates are missing for so many points? 
+
+Are all the points where you would expect? why do you think this is?
+
+
+
+
+
+```{r}
+#load library
+library(sf)
+#load geojson from url
+# distMap <- read_sf("data_0.shp")
+distMap <- st_read(file.path("redlist_species_data_e_glacialis/data_0.shp"))
+#quick view to see what we're dealing with
+mapview::mapview(distMap)
+distMap <- fortify(distMap)
+
+ggplot(data=worldMap, aes(x=long, y=lat)) +
+  # geom_polygon(data=worldMap, aes(x = long, y = lat, group=group)) +
+  geom_polygon(aes(group=group)) +
+  geom_polygon(data = distMap, fill = "orangered")
+```
+
+
+
+created and compiled by Sarah Bolinger, 2022-2023
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
