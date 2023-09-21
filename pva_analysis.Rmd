@@ -11,7 +11,128 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
-# POPULATION VIABILITY ANALYSIS MODEL
+# REVIEW
+
+## Before we start, let's make sure everyone is properly connected to GitHub.
+
+----------------------------------------------------------------------------------------
+*R CODE TROUBLESHOOTING NOTES*
+
+1. If you get an error about something not existing, check spelling, capitalization, underscores, etc. Remember that names need to be typed *identically* every time so R knows which object you're referring to! 
+
+2. Make sure you've loaded the necessary *packages* and imported all necessary *data*. If a necessary package isn't installed, RStudio should prompt you to install it, but you can also install manually. 
+
+3. R doesn't know when you've typed a name incorrectly or failed to load a package, but it will generally tell you when your coding syntax (formatting, essentially) is off with a little red x in front of the line where the problem is. If you mouse over the x symbol, a message pops up telling you what the issue is (some of these are easier to understand than others). Things to watch for: close your parentheses and quotes, don't add extraneous symbols or letters, add commas between function arguments, put all non-numeric writing in quotations.
+
+4. Throughout the script, I will put extra notes about R in brackets [] for anyone who is interested in knowing why things look the way the do. Feel free to ignore them for now if you're feeling overwhelmed!
+
+5. If you are antsy waiting for one of us to come help you, try using Google to find an answer! This is also good practice for when you are working on your final projects in R later this semester. You can try copying the exact text of an error message if you don't know what to search. Also try searching for "R + ~name of function~" for more info about things.
+----------------------------------------------------------------------------------------
+
+## Now, some review of what we did in our last few R labs:
+
+### In R Markdown, you have *text* sections (like this one) and *code chunks* (which should have a different background color). The text sections are almost like a Word document, so you can type regular text. The formatting uses special symbols, but we don't need that for now.
+
+[R NOTE: You can make a new empty code chunk by typing ctrl+alt+i ]
+
+```{r}
+# code chunk
+# non-code needs to be commented, like this (using pound sign)
+if it isn't, R will try to read it as code and will get mad that the syntax isn't correct
+```
+
+### Normally at the beginning of a script we load in packages. We loaded "tidyverse" above.
+
+[R NOTE: what are the ## in the *text* (not the code chunks) telling R to do?]
+
+### R has built-in data we can use. Let's load the data so we can view it. Find the dataframe under "Environment". Now click on the arrow next to it to see the variables it contains. Alternatively, click on the name itself to open a view of the whole dataframe (then close it and come back to the script).
+
+```{r}
+data("fish_encounters")
+```
+
+### Let make a table of the number of captures at each station. What is the $ doing?
+
+```{r}
+table(fish_encounters$station)
+```
+
+### Now let's make a histogram of the same data (counts of number of fish per station). Note that the two ways of writing the plot code below produce identical results (you can use whichever you prefer):
+
+```{r}
+fish_encounters |> ggplot(aes(x = ))
+```
+
+
+## Let's import some external data. 
+
+### Note the name of the dataframe (capt) and view the variables like we did above.
+
+```{r}
+capt <- capture_data.csv
+```
+*1. Copy or type code from earlier in the script to make a table of birds captured in June*
+
+```{r}
+
+```
+
+*2. If instead we wanted to look at the data as a histogram of capture frequencies, what would we do? Can we make a histogram like with the other data (let's try it, even though I'm sure you see where this is going...)*
+
+```{r}
+
+```
+
+6. Since the data is **already formatted as a count (number of species/month)** we can use a bar plot instead:
+
+```{r}
+capt |> ggplot(aes(x=Species, y=June)) +
+  geom_col()
+```
+
+[R NOTE: geom_col (not geom_bar) is best to use if your y variable comes from the data itself and is not a count]
+
+
+# DATA FROM LAST LAB
+
+You can create a csv (essentially a small text-based version of a spreadsheet) directly in R, so you don't even have to open Excel or Google Sheets.
+
+We are going to enter our data by making each *column* on the datasheet into a *vector* in R (vector = kind of like a list, but easier to manipulate in R). 
+
+Then, we will join all the vectors together to create our dataframe. We could also do this by row ("row-wise") and not column-wise, but I think it's easier to visualize the columns because each one represents a variable.
+
+Enter each value from each column, separated by commas (we'll do an example first)
+
+```{r}
+########### EXAMPLE DATAFRAME ####################
+
+Species <- c("CACH", "BRTH", "GRCA", "BRTH")
+ID      <- c(1, 2, 3, 4)
+Age     <- c("HY", "U", "AHY", "HY")
+Sex     <- c("M", "U", "U", "U")
+Comments <- c("molting primaries 1 and 2", 
+              "none", 
+              "the best bird", 
+              "eye color is gray- indicates hatch year")
+
+birdData <- data.frame(Species, ID, Age, Sex, Comments)
+```
+
+[R NOTE: note how I can add spaces and line breaks within the parentheses and it does not affect how R interprets the code. This can improve readability.]
+
+```{r}
+Species <- c()
+ID      <- c()
+Age     <- c()
+Sex     <- c()
+Comments <- c()
+
+labData <- data.frame(Species, ID, Age, Sex, Comments)
+
+```
+
+
+# POPULATION VIABILITY ANALYSIS SIMULATION
 
 *Population Viability Analysis (PVA)* is one of the most commonly used management practices. It takes parameter estimates (i.e., estimated numbers for processes that we care about, like birth rates, death rates, immigration & emigration) from the published literature to make predictions about what will happen to the population under different scenarios. 
 
@@ -20,6 +141,8 @@ We are implementing a very simple PVA here, but more complex analyses can accoun
 *NOTE* We will be using this model again in the future! For your final project, you will search the published literature for estimates of the parameters given here (e.g., R_max, Init_N), and put those into the model to perform a PVA for your chosen species.
 
 *You will want to run through the whole script once before answering questions on the lab report.* 
+
+There are packages for running PVA analyses, but you will often find it easier to troubleshoot if you have the code in front of you (even if you found it online and didn't write it yourself). Instead of just telling R "run this analysis," you can see what goes into the analysis and make sure it's doing what you want (and change it as needed).
 
 
 ## MODEL PARAMETERS 
@@ -44,6 +167,7 @@ But remember that not all models will use all of these. Example: migration is di
 
 
 ### Basic life history parameters
+
 
 ```{r}
 R_max <- 0.15       # Maximum rate of growth
@@ -86,15 +210,14 @@ Flood_surv <- 0.9      # 90% of population can survive a flood
 Tell R how long to run the model for, and how many times to run it.
 
 ```{r}
-nyears <- 100     # number of years
+nyears <- 10     # number of years
 nreps <- 500      # number of replicates
-nreps <- 100      # number of replicates
 ```
 
 
 ## SPECIFY THE PVA MODEL
 
-If you want to look at the function step-by-step, enable the *browser* function below
+[R NOTE:If you want to look at the function step-by-step, enable the *browser* function below]
 
 ```{r}
 
@@ -135,89 +258,74 @@ Default[is.na(Default)] <- 0
 ```
 
 
-
 ## PLOT THE MODEL OUTPUT
 
 There are several types of visualizations that you might want to use for your PVA models: The first is to look at the "cloud" of population abundance trajectories. What is this showing us?
 
 We will first specify a function to plot the data, and then run the function. This means we don't have to type out the plot code multiple times (we can just plug in the name of the data to plot)
 
-
-```{r warning=FALSE}
-PlotCloud <- function(simdata){
-  
-  p <- simdata |>
-    ggplot()         # assign blank plot to "p" so we can easily add lines later
-  
-  for(i in seq(nreps)) {
-
-    p <- p + geom_line(aes(x=year,y=simdata[,i]), col=i)
-    
-  }
-
-  p
-  
-  # simdata |> ggplot() + geom_line(aes(x=year,y))
-  
-#   plot(c(1:101),simdata[,1],col=gray(0.7),type="l",ylim=c(0,max(simdata)),xlab="Years",ylab="Abundance")
-#   
-#   for(r in 2:ncol(simdata)){
-#     lines(c(1:101),simdata[,r],col=gray(0.7),type="l")
-#   }
-# }
-}
-
-
-
-# run the function specified above
-PlotCloud(Default)
-# 
-# Error in `plot.window()`:
-# ! need finite 'ylim' values
-```
-example plot:
 ```{r}
-# library(ggplot2)
-nsim <- 100 # number of paths
-
-# for (i in seq(nsim)) {
 plot_cloud <- function(simdata){
+  
   dat <- vector("list", nreps)
   p <- ggplot()
   time <- seq(0, nyears, by = 1)
+  
   for (i in seq(2,nreps)) {
-    # browser()
-      # s <- cumsum(rlnorm(t, meanlog = 0, sdlog = 1))
     s <- simdata[,i] 
     dat[[i]] <- data.frame(t = time, s = s)
     p <- p + geom_line(data = dat[[i]], mapping = aes(x = t, y = s), col = i)
   } 
+  
+  return(p)
 }
 p <- plot_cloud(Default)
-# I think it's not plotting the lines bc they have NAs in them
 p #or print(p)
 ```
 
+Does this seem like the right timescale for this data? You can go back and *change the value of "nyears"* to tell R to run it for more time or less time. Just remember you have to do 2 things after changing a parameter values (like "nyears"): *re-run the model* and then also *plot the model output again*. 
 
-...but Okay, what do we learn from this? Really, it's a mess!!!
+## OTHER ANALYSES
 
-Maybe our question is about the probability of decline over 100 years (Note: This is VERY common in management -- the way managers evaluate endangered species listings is by determining what the population will look like in 30 years, 60 years, etc.).  In that case maybe we should present a histogram of final abundances
+We can create other functions to answer other questions of interest using our simulated data.
+
+Maybe our question is about the **probability of decline over some time period** 
+
+(Note: This is VERY common in management -- the way managers evaluate endangered species listings is by determining what the population will look like in 30 years, 60 years, etc.).  
+
+In that case maybe we should present a histogram of final abundances. Let's set "nyears" to 30 years, re-run the chunk under "RUN THE MODEL", and then run the code below:
+
+[R NOTE: This time we aren't making a function to make the plot, we're just making the plot]
 
 ```{r}
-hist(Default[nrow(Default),],xlab="Final population size at endpoint",ylab="Number of replicates",main="")
-abline(v=Init_N,col="blue",lwd=2)
+time_to_ext <- data.frame(timeToExt = colSums(Default != 0))
+
+
+time_to_ext |> ggplot(aes(x=timeToExt)) +
+  geom_histogram() +
+  xlab("Years to Extinction")
+
+
+
+
 ```
 
 
-Or if our question is about extinction risk, maybe we want to plot extinction risk by time???
+Or if our question is about extinction risk, maybe we want to plot extinction risk by time??? Create the function:
 ```{r}
-
 Extinction_byyear <- function(simdata){
   apply(simdata,1,function(t)  length(which(t==0)))/ncol(simdata)
 }
+```
 
-plot(c(1:101),Extinction_byyear(Default),type="l",lwd=2,xlab="year",ylab="extinction risk")
-#abline(h=0.05,col="red",lwd=2)
+Run the function and plot:
+
+```{r}
+
+ext <- data.frame(year = seq(0, nyears, by=1),ext = Extinction_byyear(Default)) 
+ext |> ggplot(aes(x=ext, y=year)) +geom_line()
+
+
 ```
 
 
@@ -245,13 +353,15 @@ for(scenario in 1:length(flood_survivors)){
   PVA <- PVAdemo(nreps,nyears,Init_N,R_max,K,Flood_prob, flood_survivors[scenario])
   all_scenarios[scenario] <- Exctinction_risk(PVA)
 }
+survivors <- data.frame(scenario = all_scenarios, flood_survivors)
 
-plot(flood_survivors,all_scenarios,type="p",cex=2,xlab="Proportion of Individuals Surviving Floods",ylab="extinction risk")
+ggplot(survivors, aes(x=scenario, y=flood_survivors)) + geom_point()
+# plot(flood_survivors,all_scenarios,type="p",cex=2,xlab="Proportion of Individuals Surviving Floods",ylab="extinction risk")
 #abline(h=0.05,col="turquoise",lwd=2)
 ```
 
 
+# APPLY TO REAL-WORLD DATA
 
-
-
+How would we use the above code on real-world data? Let's try with the data we collected last lab.
 
