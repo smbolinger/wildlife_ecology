@@ -1,0 +1,164 @@
+---
+title: "Population Viability Analysis"
+author: "Sarah Bolinger"
+date: "2023-09-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# POPULATION VIABILITY ANALYSIS MODEL
+
+*Population Viability Analysis (PVA)* is one of the most commonly used management practices. It takes parameter estimates (i.e., estimated numbers for processes that we care about, like birth rates, death rates, immigration & emigration) from the published literature to make predictions about what will happen to the population under different scenarios. 
+
+We are implementing a very simple PVA here, but more complex analyses can account for the degree of genetic variability, susceptibility to diseases, and other relevant measures of population health, or viability. Today, you are going to practice going through the analysis and learning what the parts do. 
+
+*NOTE* We will be using this model again in the future! For your final project, you will search the published literature for estimates of the parameters given here (e.g., R_max, Init_N), and put those into the model to perform a PVA for your chosen species.
+
+*You will want to run through the whole script once before answering questions on the lab report.* 
+
+
+## MODEL PARAMETERS 
+
+Before running the model, we will tell R what values to use for different parameters.
+
+*Parameters* is just a fancy way of saying "values we might change each time we run the model." Some examples of parameters used in population models are:  
+
+
+*population rates* (e.g. growth rate, mortality rate, immigration rate)  
+
+*initial values* (here, the initial population size)
+
+*stochasticity* (values we choose to represent randomness in the environment or in the rates themselves)
+
+*external factors* (e.g. probability of flood, storm, hunting, etc.)
+
+*population processes* (e.g. carrying capacity, density dependence)
+
+
+But remember that not all models will use all of these. Example: migration is difficult to measure in most species, and we may not have estimates. Or we may choose to create a simplified model depending on the question we are asking.
+
+
+### Basic life history parameters
+
+```{r}
+R_max <- 0.15       # Maximum rate of growth
+Init_N <- 51        # Initial abundance
+K <- 175            # Carrying capacity
+```
+
+### Environmental stochasticity (randomness)
+```{r}
+
+SD_lambda <- 0.11  # standard deviation of lambda
+```
+
+#The lambda parameter is the population growth rate in one time step (Nt+1/Nt).
+
+### Density-dependence (Ricker model)
+
+# this is a function for computing next-year abundance -- includes environmental stochasticity. It is conceptually similar to the logistic growth rate we have seen in lecture.
+NextYear <- function(prev_abund){       
+  prev_abund * exp(log(rnorm(1,R_max,SD_lambda))*(1-(prev_abund/K)))
+}
+
+####
+# Catastrophe
+####
+
+# Every year, there is some chance of flood occurrence, and the severity of the flood influences how many individuals will survive
+Flood_prob <- 0.05     # 5% chance of major flood
+Flood_surv <- 0.9    # 90% of population can survive a flood 
+
+#command to tell you where in your code you are
+browser()
+
+####
+# Basic simulation parameters
+####
+
+nyears <- 100     # number of years
+nreps <- 500      # number of replicates
+
+
+PVAdemo <- function(nreps, nyears, Init_N, R_max, K, Flood_prob, Flood_surv){
+  #browser()
+  PopArray2 <- array(0,dim=c((nyears+1),nreps))
+  
+  ## start looping through replicates
+  
+  for(rep in 1:nreps){
+    
+    # set initial abundance
+    PopArray2[1,rep] <- Init_N     # initial abundance
+    
+    ### loop through years
+    for(y in 2:(nyears+1)){
+      ### stochasticity and d-d
+      nextyear <- max(0,trunc(NextYear(PopArray2[y-1,rep])))
+      
+      ### catastrophe
+      if(runif(1)<Flood_prob) nextyear <- nextyear*Flood_surv
+      PopArray2[y,rep] <- nextyear 
+    }
+  }
+  
+  return(PopArray2)
+}
+
+### Run the PVA!
+Default <- PVAdemo(nreps,nyears,Init_N,R_max,K,Flood_prob, Flood_surv)
+
+#There are several types of visualizations that you might want to use for your PVA models: The first is to look at the "cloud" of population abundance trajectories.
+PlotCloud <- function(simdata){
+  plot(c(1:101),simdata[,1],col=gray(0.7),type="l",ylim=c(0,max(simdata)),xlab="Years",ylab="Abundance")
+  
+  for(r in 2:ncol(simdata)){
+    lines(c(1:101),simdata[,r],col=gray(0.7),type="l")
+  }
+}
+
+PlotCloud(Default)
+You may find it helpful to save the original plots for reference -- you will be comparing them to new plots you make based on new parameter values
+
+#...but Okay, what do we learn from this? Really, it's a mess!!!
+
+#Maybe our question is about the probability of decline over 100 years (Note: This is VERY common in management -- the way managers evaluate endangered species listings is by determining what the population will look like in 30 years, 60 years, etc.).  In that case maybe we should present a histogram of final abundances
+hist(Default[nrow(Default),],xlab="Final population size at endpoint",ylab="Number of replicates",main="")
+abline(v=Init_N,col="blue",lwd=2)
+
+
+#Or if our question is about extinction risk, maybe we want to plot extinction risk by time???
+Extinction_byyear <- function(simdata){
+  apply(simdata,1,function(t)  length(which(t==0)))/ncol(simdata)
+}
+
+plot(c(1:101),Extinction_byyear(Default),type="l",lwd=2,xlab="year",ylab="extinction risk")
+#abline(h=0.05,col="red",lwd=2)
+
+
+#What if our question is about the effect of flooding on extinction risk. Let's imagine that the probability of flooding is not expected to change with climate change, but that the intensity of the flood damage is likely to increase substantially.  Currently, floods generally result in a 10% population reduction (90% of the population survives the flood). But climate change could increase this number to as much as 85%. Let's look at how much this could increase extinction risk.
+Exctinction_risk <- function(simdata){
+  length(which(simdata[nrow(simdata),]==0))/ncol(simdata)
+}
+
+#Since we don't know the amount of population reduction caused by climate change, we estimate. Currently, there is a 10% population decline (lambda (Flood_surv) = 0.9). The literature says climate change could lead to up to 85% declines (Flood_surv =0.15). **The uncertainty in the estimate means we have to allow for a range of future conditions**. 
+flood_survivors <- seq(0.9,0.15,by=-0.05)
+
+#This is exactly the same PVA as before, except now the proportion surviving the flood is not a constant, but a parameter that varies
+all_scenarios <- numeric(length(flood_survivors))
+for(scenario in 1:length(flood_survivors)){
+  PVA <- PVAdemo(nreps,nyears,Init_N,R_max,K,Flood_prob, flood_survivors[scenario])
+  all_scenarios[scenario] <- Exctinction_risk(PVA)
+}
+
+plot(flood_survivors,all_scenarios,type="p",cex=2,xlab="Proportion of Individuals Surviving Floods",ylab="extinction risk")
+#abline(h=0.05,col="turquoise",lwd=2)
+
+
+
+
+
+
