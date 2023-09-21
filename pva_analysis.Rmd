@@ -355,7 +355,8 @@ for(scenario in 1:length(flood_survivors)){
 }
 survivors <- data.frame(scenario = all_scenarios, flood_survivors)
 
-ggplot(survivors, aes(x=scenario, y=flood_survivors)) + geom_point()
+ggplot(survivors, aes(x=scenario, y=flood_survivors)) +
+  geom_point(shape=1, size=2, col="purple3") 
 # plot(flood_survivors,all_scenarios,type="p",cex=2,xlab="Proportion of Individuals Surviving Floods",ylab="extinction risk")
 #abline(h=0.05,col="turquoise",lwd=2)
 ```
