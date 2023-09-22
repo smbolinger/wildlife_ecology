@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ---
 title: "Population Viability Analysis"
 author: "Sarah Bolinger"
@@ -90,6 +91,7 @@ fish_encounters |> ggplot(aes(x = station)) +
 # ufo<- read.table(file=url("https://users.stat.ufl.edu/~winner/data/ufo_location_shape.csv") )
 ufo<- read_csv(file=url("https://users.stat.ufl.edu/~winner/data/ufo_location_shape.csv") )
 ```
+
 How would you make a simple table to show the total number of UFO sightings per country?
 
 ```{r}
@@ -309,7 +311,7 @@ Maybe our question is about the **probability of decline over some time period**
 
 (Note: This is VERY common in management -- the way managers evaluate endangered species listings is by determining what the population will look like in 30 years, 60 years, etc.).  
 
-In that case maybe we should present a histogram of final abundances. Let's set "nyears" to 30 years, re-run the chunk under "RUN THE MODEL", and then run the code below:
+In that case maybe we should present a histogram of final abundances (in other words, **looking at all the model runs, how many times did the population size at year 100 end up in each of the following bins?**):
 
 [R NOTE: This time we aren't making a function to make the plot, we're just making the plot]
 
@@ -324,6 +326,7 @@ hist(as.numeric(Default[nrow(Default),]),xlab="Final population size at endpoint
 
 
 Or if our question is about extinction risk, maybe we want to plot extinction risk by time??? Create the function:
+
 ```{r}
 Extinction_byyear <- function(simdata){
   apply(simdata,1,function(t)  length(which(t==0)))/ncol(simdata)
@@ -335,10 +338,10 @@ Run the function and plot:
 ```{r}
 
 ext <- data.frame(year = seq(0, nyears, by=1),ext = Extinction_byyear(Default)) 
+
 ext |> ggplot(aes(x=year, y=ext)) +
   geom_line() +
   ylab("Extinction Risk")
-
 
 ```
 
@@ -393,4 +396,3 @@ How would we use the above code on real-world data? Let's try with the data we c
 ```{r}
 
 ```
-

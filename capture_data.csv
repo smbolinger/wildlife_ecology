@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "","Species","total_captures","unique_individuals","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"
 "1","Acadian Flycatcher",1,1,1,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "2","Alder Flycatcher",1,1,NA,NA,NA,NA,NA,"1",NA,NA,NA,NA,NA,NA
@@ -61,3 +62,68 @@
 "60","Net 16",47.14,NA,0,0,0,0,0,"2.48",5.18,5.21,5.46,4.93,5.42,3.85
 "61","Net 11c",6.69,NA,0,0,0,0,0,"0",0,0,0,0,0,0
 "62","Notes",NA,NA,NA,NA,NA,NA,NA,"net 4 reoriented",NA,NA,NA,NA,NA,NA
+=======
+"","Species","total_captures","unique_individuals","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"
+"1","Acadian Flycatcher",1,1,1,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"2","Alder Flycatcher",1,1,NA,NA,NA,NA,NA,"1",NA,NA,NA,NA,NA,NA
+"3","American Goldfinch",4,4,NA,NA,NA,NA,NA,NA,NA,NA,NA,4,NA,NA
+"4","American Redstart",1,1,NA,NA,NA,NA,NA,NA,1,NA,NA,NA,NA,NA
+"5","Blue Jay",4,3,1,1,NA,NA,NA,NA,NA,NA,NA,1,NA,NA
+"6","Blue-gray Gnatcatcher",1,1,NA,NA,NA,NA,NA,NA,NA,NA,NA,1,NA,NA
+"7","Blue-headed Vireo",1,1,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,1,NA
+"8","Brown Thrasher",13,3,NA,NA,NA,NA,NA,NA,2,4,2,1,2,2
+"9","Carolina Chickadee",2,2,NA,NA,NA,NA,NA,NA,NA,NA,NA,1,NA,1
+"10","Carolina Wren",71,38,4,2,5,4,4,"8",6,2,4,2,3,2
+"11","Common Yellowthroat",1,1,1,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"12","Downy Woodpecker",5,5,1,2,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"13","Eastern Phoebe",4,4,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,4,NA
+"14","Golden-crowned Kinglet",2,2,NA,NA,NA,NA,NA,NA,NA,2,NA,NA,NA,NA
+"15","Gray-cheeked Thrush",1,1,1,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"16","Gray Catbird",3,3,3,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"17","Hermit Thrush",6,4,NA,NA,NA,NA,NA,NA,NA,1,3,NA,2,NA
+"18","Hooded Warbler",1,1,1,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"19","House Wren",2,2,NA,NA,NA,NA,NA,NA,2,NA,NA,NA,NA,NA
+"20","Indigo Bunting",5,5,NA,NA,NA,NA,NA,NA,5,NA,NA,NA,NA,NA
+"21","Kentucky Warbler",2,2,NA,NA,NA,NA,NA,"1",NA,NA,NA,NA,NA,NA
+"22","Northern Cardinal",79,58,8,8,3,1,3,"4",11,3,1,NA,3,8
+"23","Northern Waterthrush",2,2,2,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"24","Orange-crowned Warbler",5,4,NA,NA,NA,NA,NA,NA,NA,3,1,NA,1,NA
+"25","Ovenbird",1,1,1,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"26","Rose-breasted Grosbeak",1,1,NA,NA,NA,NA,NA,NA,1,NA,NA,NA,NA,NA
+"27","Red-bellied Woodpecker",1,1,NA,NA,NA,NA,NA,NA,1,NA,NA,NA,NA,NA
+"28","Ruby-crowned Kinglet",15,8,NA,NA,NA,NA,NA,NA,NA,3,4,4,2,2
+"29","Rufous Hummingbird",3,3,NA,NA,NA,NA,NA,NA,NA,NA,1,1,1,NA
+"30","Swainson's Thrush",2,2,2,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"31","Tennessee Warbler",1,1,NA,NA,NA,NA,NA,"1",NA,NA,NA,NA,NA,NA
+"32","Tufted Titmouse",6,6,NA,NA,NA,NA,NA,NA,3,NA,1,NA,NA,NA
+"33","Veery",3,3,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"34","White-eyed Vireo",12,7,2,2,1,NA,NA,NA,2,1,1,NA,NA,NA
+"35","White-throated Sparrow",15,14,NA,NA,NA,NA,NA,NA,NA,NA,6,NA,6,3
+"36","Worm-eating Warbler",1,1,NA,NA,NA,NA,NA,"1",NA,NA,NA,NA,NA,NA
+"37","Wilson's Warbler",1,1,NA,NA,NA,NA,NA,NA,1,NA,NA,NA,NA,NA
+"38","Winter Wren",1,1,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,1,NA
+"39","Wood Thrush",3,3,3,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"40","Yellow-breasted Chat",1,1,NA,NA,NA,NA,NA,"1",NA,NA,NA,NA,NA,NA
+"41","TOTAL",284,203,31,15,9,5,7,"17",35,19,24,15,26,18
+"42","Birds/MNH",0.26,NA,0.8,0.29,0.14,0.07,0.14,"0.22",0.42,0.23,0.27,0.19,0.3,0.23
+"43","Mist-net Hours (MNH)",1086.08,NA,38.67,51.92,64.94,72.71,50.42,"75.85",82.93,83.33,87.33,78.93,86.67,77.85
+"44","# Nets",NA,NA,10,10,13,15,10,"16",16,16,16,16,16,16
+"45","Net 1",75.24,NA,3.87,5.19,5.38,4.96,5.04,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"46","Net 2",75.24,NA,3.87,5.19,5.38,4.96,5.04,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"47","Net 3",75.24,NA,3.87,5.19,5.38,4.96,5.04,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"48","Net 4",70.2,NA,3.87,5.19,5.38,4.96,0,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"49","Net 5",75.24,NA,3.87,5.19,5.38,4.96,5.04,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"50","Net 6",65.13,NA,3.87,5.19,5.38,4.96,0,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"51","Net 7",75.24,NA,3.87,5.19,5.38,4.96,5.04,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"52","Net 8",70.2,NA,3.87,5.19,5.38,4.96,0,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"53","Net 9",70.2,NA,3.87,5.19,5.38,4.96,0,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"54","Net 10",75.24,NA,3.87,5.19,5.38,4.96,5.04,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"55","Net 11",65.22,NA,0,0,4.42,4.96,5.04,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"56","Net 12",65.22,NA,0,0,4.42,4.96,5.04,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"57","Net 13",65.22,NA,0,0,4.42,4.96,5.04,"4.89",5.18,5.21,5.46,4.93,5.42,5.1
+"58","Net 14",58.72,NA,0,0,0,4.13,5.04,"4.89",5.18,5.21,5.46,4.93,5.42,3.85
+"59","Net 15",52.86,NA,0,0,0,4.13,0,"4.89",5.18,5.21,5.46,4.93,5.42,3.85
+"60","Net 16",47.14,NA,0,0,0,0,0,"2.48",5.18,5.21,5.46,4.93,5.42,3.85
+"61","Net 11c",6.69,NA,0,0,0,0,0,"0",0,0,0,0,0,0
+"62","Notes",NA,NA,NA,NA,NA,NA,NA,"net 4 reoriented",NA,NA,NA,NA,NA,NA
+>>>>>>> 4cdb67cb7fd20e6ffdc6d80b7d2a28d86bd2e410
