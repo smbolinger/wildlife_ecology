@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
+library(ggpubr)
 ```
 
 # REVIEW
@@ -41,7 +42,7 @@ library(tidyverse)
 if it isn't, R will try to read it as code and will get mad that the syntax isn't correct
 ```
 
-### Normally at the beginning of a script we load in packages. We loaded "tidyverse" above.
+### Normally at the beginning of a script we load in packages. We loaded "tidyverse" and "ggpubr" above.
 
 [R NOTE: what are the ## in the *text* (not the code chunks) telling R to do?]
 
@@ -51,16 +52,32 @@ if it isn't, R will try to read it as code and will get mad that the syntax isn'
 data("fish_encounters")
 ```
 
-### Let make a table of the number of captures at each station. What is the $ doing?
+### This data represents captures of fish at different stations as they swim downstream. The stations are in order from upstream (Release) to furthest downstream (MAW). Let make a table of the number of captures at each station. What happens as we get to stations further downstream?
 
 ```{r}
 table(fish_encounters$station)
 ```
 
-### Now let's make a histogram of the same data (counts of number of fish per station). Note that the two ways of writing the plot code below produce identical results (you can use whichever you prefer):
+### Now let's make a frequency distribution of the same data - the number of fish caught at each station. Note that the two ways of writing the plot code below produce identical results. If you prefer putting name of the data within the function call, you can do that instead of "piping" it in. Piping helps make the code more readable because it puts the name of the data first, so you may prefer that instead.
 
 ```{r}
-fish_encounters |> ggplot(aes(x = ))
+ggplot(data=fish_encounters, aes(x=station)) +
+  geom_bar()
+
+fish_encounters |> ggplot(aes(x = station)) +
+  geom_bar()
+```
+
+A simple way to visualize captures of each individual as they move downstream is to make a bar chart with a different color for each individual fish:
+
+```{r}
+fish_encounters |> ggplot(aes(x = station)) +
+  geom_bar(aes(fill=fish)) +
+  # all of the code below is just to get the legend looking nice!
+  theme(legend.text = element_text(size=7),
+        legend.position = "top", 
+        legend.key.width = unit(0.3, units="cm")) +
+  guides(fill = guide_legend(nrow=1, label.position="bottom"))
 ```
 
 
@@ -69,29 +86,25 @@ fish_encounters |> ggplot(aes(x = ))
 ### Note the name of the dataframe (capt) and view the variables like we did above.
 
 ```{r}
-capt <- capture_data.csv
+# ufo <- read.csv("ufo_location_shape.csv")
+# ufo<- read.table(file=url("https://users.stat.ufl.edu/~winner/data/ufo_location_shape.csv") )
+ufo<- read_csv(file=url("https://users.stat.ufl.edu/~winner/data/ufo_location_shape.csv") )
 ```
-*1. Copy or type code from earlier in the script to make a table of birds captured in June*
+How would you make a simple table to show the total number of UFO sightings per country?
 
 ```{r}
 
 ```
 
-*2. If instead we wanted to look at the data as a histogram of capture frequencies, what would we do? Can we make a histogram like with the other data (let's try it, even though I'm sure you see where this is going...)*
+
+Change the plot below to show the frequency of different *shapes* of UFO that have been reported:
 
 ```{r}
-
+ggplot(ufo, mapping = aes(x=State)) +
+  geom_bar() +
+  coord_flip() +
+  theme(axis.text.x=element_text(size=5))
 ```
-
-6. Since the data is **already formatted as a count (number of species/month)** we can use a bar plot instead:
-
-```{r}
-capt |> ggplot(aes(x=Species, y=June)) +
-  geom_col()
-```
-
-[R NOTE: geom_col (not geom_bar) is best to use if your y variable comes from the data itself and is not a count]
-
 
 # DATA FROM LAST LAB
 
@@ -156,7 +169,7 @@ Before running the model, we will tell R what values to use for different parame
 
 *initial values* (here, the initial population size)
 
-*stochasticity* (values we choose to represent randomness in the environment or in the rates themselves)
+*stochasticity* (values we choose to represent randomness in the environment or between individuals)
 
 *external factors* (e.g. probability of flood, storm, hunting, etc.)
 
@@ -168,10 +181,9 @@ But remember that not all models will use all of these. Example: migration is di
 
 ### Basic life history parameters
 
-
 ```{r}
-R_max <- 0.15       # Maximum rate of growth
-Init_N <- 51        # Initial abundance
+R_max <- 1.05       # Maximum rate of growth
+Init_N <- 50        # Initial abundance
 K <- 175            # Carrying capacity
 ```
 
@@ -210,7 +222,7 @@ Flood_surv <- 0.9      # 90% of population can survive a flood
 Tell R how long to run the model for, and how many times to run it.
 
 ```{r}
-nyears <- 10     # number of years
+nyears <-100     # number of years
 nreps <- 500      # number of replicates
 ```
 
@@ -223,7 +235,7 @@ nreps <- 500      # number of replicates
 
 
 PVAdemo <- function(nreps, nyears, Init_N, R_max, K, Flood_prob, Flood_surv){
-  #browser()
+  # browser()
   PopArray2 <- array(0,dim=c((nyears+1),nreps))
   
   for(rep in 1:nreps){                            # start looping through replicates
@@ -236,13 +248,18 @@ PVAdemo <- function(nreps, nyears, Init_N, R_max, K, Flood_prob, Flood_surv){
       nextyear <- max(0,trunc(NextYear(PopArray2[y-1,rep]))) # stochasticity + density-dep
       
       if(runif(1)<Flood_prob) nextyear <- nextyear*Flood_surv       # catastrophe
+        
       PopArray2[y,rep] <- nextyear 
+      
     }
   }
   
   return(PopArray2)
 }
+
+# PVAdemo()
 ```
+
 
 ## RUN THE PVA MODEL
 
@@ -283,7 +300,6 @@ p <- plot_cloud(Default)
 p #or print(p)
 ```
 
-Does this seem like the right timescale for this data? You can go back and *change the value of "nyears"* to tell R to run it for more time or less time. Just remember you have to do 2 things after changing a parameter values (like "nyears"): *re-run the model* and then also *plot the model output again*. 
 
 ## OTHER ANALYSES
 
@@ -298,13 +314,9 @@ In that case maybe we should present a histogram of final abundances. Let's set 
 [R NOTE: This time we aren't making a function to make the plot, we're just making the plot]
 
 ```{r}
-time_to_ext <- data.frame(timeToExt = colSums(Default != 0))
 
-
-time_to_ext |> ggplot(aes(x=timeToExt)) +
-  geom_histogram() +
-  xlab("Years to Extinction")
-
+hist(as.numeric(Default[nrow(Default),]),xlab="Final population size at endpoint",ylab="Number of replicates",main="")
+# abline(v=Init_N,col="blue",lwd=2)
 
 
 
@@ -323,13 +335,18 @@ Run the function and plot:
 ```{r}
 
 ext <- data.frame(year = seq(0, nyears, by=1),ext = Extinction_byyear(Default)) 
-ext |> ggplot(aes(x=ext, y=year)) +geom_line()
+ext |> ggplot(aes(x=year, y=ext)) +
+  geom_line() +
+  ylab("Extinction Risk")
 
 
 ```
 
+Why is the plot of extinction risk like this? Check to see if the population went extinct in any of the model runs. 
 
 What if our question is about the effect of flooding on extinction risk. Let's imagine that the probability of flooding is not expected to change with climate change, but that the intensity of the flood damage is likely to increase substantially.  Currently, floods generally result in a 10% population reduction (90% of the population survives the flood). But climate change could increase this number to as much as 85%. Let's look at how much this could increase extinction risk.
+
+Specify the function:
 
 ```{r}
 
@@ -355,8 +372,15 @@ for(scenario in 1:length(flood_survivors)){
 }
 survivors <- data.frame(scenario = all_scenarios, flood_survivors)
 
-ggplot(survivors, aes(x=scenario, y=flood_survivors)) +
-  geom_point(shape=1, size=2, col="purple3") 
+ggplot(survivors, aes(x=flood_survivors, y=scenario)) +
+  geom_point(shape=17, size=3, col="purple3")  +
+  ylab("Extinction Risk") +
+  xlab("Proportion of Individuals Surviving Flood") +
+  geom_smooth(method="lm",
+              formula=y~x) + 
+  stat_regline_equation(label.x=0.8,aes(label=..rr.label..)) + 
+  stat_regline_equation(label.y=0.8,label.x=0.8,aes(label=..eq.label..)) 
+  
 # plot(flood_survivors,all_scenarios,type="p",cex=2,xlab="Proportion of Individuals Surviving Floods",ylab="extinction risk")
 #abline(h=0.05,col="turquoise",lwd=2)
 ```
@@ -364,5 +388,9 @@ ggplot(survivors, aes(x=scenario, y=flood_survivors)) +
 
 # APPLY TO REAL-WORLD DATA
 
-How would we use the above code on real-world data? Let's try with the data we collected last lab.
+How would we use the above code on real-world data? Let's try with the data we collected last lab. We have already specified all the functions in R, so we just need to *call the functions* on our lab data.
+
+```{r}
+
+```
 
