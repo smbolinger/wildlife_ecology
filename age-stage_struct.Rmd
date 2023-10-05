@@ -1,0 +1,413 @@
+---
+title: "Age-/Stage-Structured Models"
+author: "Sarah Bolinger"
+date: "2023-10-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+[Review of age-structured models concepts.]
+
+----------------------------------------------------------------------------------
+
+## Age-structured models - Part I
+
+First, we will make population size projections into the future for salmon
+populations that are structured by age (have different age classes with different 
+survival & fecundity rates).
+
+You are expected to understand what the code on lines 20 - 26 and 44 - 57 is doing. 
+Remember, the letter codes in R correspond to real biological properties about salmon
+populations.
+You will run the model as is, plot the output in two different ways, and then change 
+several of the parameter values to figure out how certain biological changes influence projected population sizes.
+
+### Model parameter values:
+
+```{r echo=TRUE}
+#Parameter values for Beverton-Holt stock-recruitment curve
+a <- 60 			 	#alpha for Beverton-Holt --
+					 			#     a measure of the max reproductive rate. related to K
+					 			           
+b <- 0.00017 		#beta for Beverton-Holt -- 
+					 			#     compensatory mortality as a function of stock size
+					 
+tf <- 100 				    #number of time steps (time in the future)
+N0 <- c(100,0,0,0,0) 	#initial population size vector for 5 age classes
+s <- 0.28 						#survival rate with fishing
+e <- 0.1056 					#fraction of age 3 fish that spawn early (age 4 is mean spawner age)
+l <- 0.1056 					#fraction of age 4 fish that spawn late as age 5 fish
+sx <- c(s,s,(s*(1-e)),(s*(l))) 	#survival vector for all ages with fishing
+                                # spawners die after spawning
+
+t <- 1 				 			  #start model at time=1
+```
+
+
+### Define the model
+
+Make a function for the age-structured matrix with fishing:
+
+
+```{r echo=TRUE}
+AgeStructMatrix_F = function(sx,a,b,tf,N0) { 
+  sig_r=0.3 
+  ncls=length(N0) 		 			#Number of age classes
+  Nt_F=matrix(0,tf,ncls) 		#Initialize output matrix with time steps as rows, age classes as columns
+  Nt_F[1,]=N0 						  #put initial values into first row of output matrix
+  
+  for(t in 1:(tf-1)) { 	 		                        #for time step t in 1:99 
+    Pt= (e*Nt_F[t,3])+((1-l)*Nt_F[t,4])+Nt_F[t,5] 	#number of spawners
+    Nt_F[t+1,1] = ((a*Pt)/(1+(b*Pt)))
+    Nt_F[t+1,2:ncls] = sx*Nt_F[t,1:(ncls-1)] 		#number of age classes 2-5  
+  }
+  return(Nt_F) # what is the function returning (what is the output)?
+}
+```
+
+
+Run the model by calling the function:
+
+
+```{r}
+Nt_F=AgeStructMatrix_F(sx,a,b,Tf,N0) 
+```
+
+
+Plot a time series with all 5 age classes, youngest to oldest: black, red, green, blue, aquamarine.
+
+
+```{r}
+matplot(1:tf,Nt_F,type="l", xlab="Time",ylab="Population size", main="Age-structured model with fishing") 
+```
+
+
+That looks like the logistic growth curve you see in textbooks, but is it realistic?
+
+Let's try running a slightly different model. Note that today we will be generating a
+final report, so we won't be going back and changing values and clicking Run again.
+Instead, we will change what needs to be changed at that point in the code to give us 
+the output we want (sounds weird, but it will make more sense later).
+
+
+Run the code chunks below. Does the output look more realistic (more like an actual population curve)?
+
+```{r}
+AgeStructMatrix_F = function(sx,a,b,tf,N0) { 
+  sig_r=0.3 
+  ncls=length(N0) 		 			#Number of age classes
+  Nt_F=matrix(0,tf,ncls) 		#Initialize output matrix with time steps as rows, age classes as columns
+  Nt_F[1,]=N0 						  #put initial values into first row of output matrix
+  
+
+  for(t in 1:(tf-1)) { 	 		                        #for time step t in 1:99 
+    Pt= (e*Nt_F[t,3])+((1-l)*Nt_F[t,4])+Nt_F[t,5] 	#number of spawners
+    
+    #number of recruits with environmental stochasticity:
+    Nt_F[t+1,1] = ((a*Pt)/(1+(b*Pt)))*(exp(sig_r*rnorm(1,mean=0, sd=1))) 
+    Nt_F[t+1,2:ncls] = sx*Nt_F[t,1:(ncls-1)] 		#number of age classes 2-5  
+  }
+  return(Nt_F) # what is the function returning (what is the output)?
+}
+```
+
+[R Note: the code in these 2 chunks is the same as at the beginning of the model, but 
+the values are overwritten so you can use the same code multiple times in one report 
+and get different values]
+
+```{r}
+
+Nt_F=AgeStructMatrix_F(sx,a,b,tf,N0) 
+
+matplot(1:tf,Nt_F,type="l", xlab="Time",ylab="Population size", main="Age-structured model with fishing") 
+```
+
+
+-----------------------------------------------------------------------------------
+
+## Environmental Stochasticity
+
+Compare the previous plot  with your neighbors and your plots should be different. Why is that? 
+
+Look at line 96 below. 
+The first half gives us the projected population size as a function of spawners (Pt). 
+But this model assumes the same population rates for every individual. What can we do
+to more realistically model the small changes that occur in individual population rates
+between years?
+
+There are ways to create individual-based models with different parameters for each
+individual, but there's a MUCH easier way that's frequently used in population models like
+ours: Add in stochasticity via an equation!
+
+The second half of that line (starting with exp) is where we add environmental
+stochasticity. *We don't literally change any of the parameters*, but we add in a random
+number to very slightly change population numbers each year. 
+
+### MODEL 1 - for comparison after we make changes:
+
+```{r}
+AgeStructMatrix_F1 = function(sx,a,b,tf,N0) { 
+  sig_r=0.3 
+  ncls=length(N0) 		 			#Number of age classes
+  Nt_F=matrix(0,tf,ncls) 		#Initialize output matrix with time steps as rows, age classes as columns
+  Nt_F[1,]=N0 						  #put initial values into first row of output matrix
+  
+  set.seed(8)
+  for(t in 1:(tf-1)) { 	 		                        #for time step t in 1:99 
+    Pt= (e*Nt_F[t,3])+((1-l)*Nt_F[t,4])+Nt_F[t,5] 	#number of spawners
+    
+    #number of recruits with environmental stochasticity:
+    # Nt_F[t+1,1] = ((a*Pt)/(1+(b*Pt)))*(exp(sig_r*rnorm(1,mean=0, sd=1))) 
+    Nt_F[t+1,1] = ((a*Pt)/(1+(b*Pt)))*(exp(sig_r*rnorm(1,mean=0, sd=1))) 
+    Nt_F[t+1,2:ncls] = sx*Nt_F[t,1:(ncls-1)] 		#number of age classes 2-5  
+  }
+  set.seed(NULL)
+  return(Nt_F) # what is the function returning (what is the output)?
+}
+```
+
+
+**Try changing "set.seed" in the code chunk below to a couple of different numbers and see what happens. Pick your favorite for your report.** 
+
+### MODEL 2 - change set.seed:
+
+[R Note: what does set.seed do? What would happen if we commented that line/took it out?]
+
+```{r}
+
+AgeStructMatrix_F2 = function(sx,a,b,tf,N0) { 
+  sig_r=0.3 
+  ncls=length(N0) 		 			#Number of age classes
+  Nt_F=matrix(0,tf,ncls) 		#Initialize output matrix with time steps as rows, age classes as columns
+  Nt_F[1,]=N0 						  #put initial values into first row of output matrix
+  
+  set.seed(8)
+  for(t in 1:(tf-1)) { 	 		                        #for time step t in 1:99 
+    Pt= (e*Nt_F[t,3])+((1-l)*Nt_F[t,4])+Nt_F[t,5] 	#number of spawners
+    
+    #number of recruits with environmental stochasticity:
+    # Nt_F[t+1,1] = ((a*Pt)/(1+(b*Pt)))*(exp(sig_r*rnorm(1,mean=0, sd=1))) 
+    Nt_F[t+1,1] = ((a*Pt)/(1+(b*Pt)))*(exp(sig_r*rnorm(1,mean=0, sd=1))) 
+    Nt_F[t+1,2:ncls] = sx*Nt_F[t,1:(ncls-1)] 		#number of age classes 2-5  
+  }
+  set.seed(NULL)
+  return(Nt_F) # what is the function returning (what is the output)?
+}
+```
+
+[R Note: how do the ** change the formatting in the output?]
+
+
+Using the code below, run the models and plot the output side by side. **Add something to the titles to differentiate the two graphs:**
+
+
+```{r}
+
+Nt_F1=AgeStructMatrix_F1(sx,a,b,tf,N0) # run model 1
+Nt_F2=AgeStructMatrix_F2(sx,a,b,tf,N0)# run model 2
+
+matplot(1:tf,Nt_F1,type="l", xlab="Time",ylab="Population size", main="Age-structured model with fishing") 
+matplot(1:tf,Nt_F2,type="l", xlab="Time",ylab="Population size", main="Age-structured model with fishing") 
+
+# set.seed(NULL) # plots are no longer the same every time
+```
+
+
+Notice how none of the actual parameter values changed.
+
+**WRITE: Explain how you can tell environmental stochasticity is being added to the model, with reference to the two plots you created.**
+
+
+
+Now let's edit the code chunk below to add MORE stochasticity.
+
+### MODEL 3 - more stochasticity
+
+[R Note: I've renamed the function here and in the last example so we can simply re-run
+the original function (for comparison) without copying it over and changing values]
+
+```{r}
+# New name so we can compare to the original easily
+AgeStructMatrix_F3 = function(sx,a,b,tf,N0) { 
+  sig_r=0.3 
+  ncls=length(N0) 		 			#Number of age classes
+  Nt_F=matrix(0,tf,ncls) 		#Initialize output matrix with time steps as rows, age classes as columns
+  Nt_F[1,]=N0 						  #put initial values into first row of output matrix
+  
+  set.seed(11)
+  for(t in 1:(tf-1)) { 	 		                        #for time step t in 1:99 
+    Pt= (e*Nt_F[t,3])+((1-l)*Nt_F[t,4])+Nt_F[t,5] 	#number of spawners
+    
+    #number of recruits with environmental stochasticity:
+    Nt_F[t+1,1] = ((a*Pt)/(1+(b*Pt)))*(exp(sig_r*rnorm(1,mean=0, sd=5))) 
+    Nt_F[t+1,2:ncls] = sx*Nt_F[t,1:(ncls-1)] 		#number of age classes 2-5  
+  }
+  set.seed(NULL)
+  return(Nt_F) # what is the function returning (what is the output)?
+}
+
+```
+[R Note: why don't we change the name of Nt_F *inside the function*?]
+
+
+Run the models and plot the output for comparison:
+
+
+```{r}
+
+Nt_F1=AgeStructMatrix_F1(sx,a,b,tf,N0) # call the original function
+Nt_F3=AgeStructMatrix_F3(sx,a,b,tf,N0) # call the modified function
+
+matplot(1:tf,Nt_F1,type="l", xlab="Time",ylab="Population size", main="Age-structured model with fishing") 
+matplot(1:tf,Nt_F3,type="l", xlab="Time",ylab="Population size", main="Age-structured model with fishing") 
+```
+
+
+**WRITE: What did you change to add more stochasticity? What did it change about the model output?**
+
+
+
+----------------------------------------------------------------------------------------
+
+## Changing the plot
+
+What would you add inside the following parentheses to explain the figure to someone else?
+
+```{r}
+#legend()
+```
+
+
+**Now copy the plot function into the code chunk below and add in the legend:**
+
+
+```{r}
+
+
+```
+
+[R Note: legend, xlab, ylab, etc are known as function arguments]
+
+
+
+What if we wanted to look at the effect on the population as a whole? We could change our plot (as below) to graph the total population size:
+
+
+```{r}
+Nt_F_totals=rowSums(Nt_F)
+plot(c(1:tf),Nt_F_totals, type="l",lwd=1.5,xlab="Time",ylab="Population size", col="blue")
+
+```
+
+--------------------------------------------------------------------------------------
+
+## Changes in spawning rates
+
+Suppose that the fraction of age-3 fish spawning early was 0.3 (perhaps in a resource-rich environment). We will plot the total population number in this question.
+
+We will change just that one parameter in the code below. We *don't need to change anything else*, and we don't want it to change value until this point in the code. What would happen if we changed it back at the beginning of the code and then hit "Knit"?
+
+FIRST, run the model with the parameters as they are and print that output to the report:
+
+```{r}
+
+set.seed(2)
+
+Nt_F=AgeStructMatrix_F(sx,a,b,tf,N0) 
+Nt_F_totals=rowSums(Nt_F)
+
+plot(c(1:tf),Nt_F_totals, type="l",lwd=1.5,xlab="Time",ylab="Population size", col="blue")
+```
+
+
+Then we will change the early spawning rate and send THAT plot to the report after the first one. **Change the parameter value below:**
+
+
+```{r}
+e <-  1.1056
+```
+
+
+Run the model and send the plot to the report. Remember, you *don't* need to run the code chunk that created the model again. If you look in your environment, you will see our original model is still there, and we are just changing parameter values this time, not the model itself.
+
+
+```{r}
+
+Nt_F=AgeStructMatrix_F(sx,a,b,tf,N0) 
+Nt_F_totals=rowSums(Nt_F)
+plot(c(1:tf),Nt_F_totals, type="l",lwd=1.5,xlab="Time",ylab="Population size", col="blue")
+```
+
+
+**WRITE: What happens to the salmon population as a whole over 100 years? Use the figures in your answer.**
+
+
+
+Now, **change the value of age-3 spawning back to the original value**. Next, we will look at the effects of *late* spawning.
+
+Change age-4 late spawning to 0.6. Remember, we don't need to change the entire model.
+We are *only changing the input parameters*. Then we call the function again but do not
+change their definition.
+
+```{r}
+# change the parameters here
+```
+
+
+Copy over the necessary code block to run the models and make the plots of the total population: 
+
+<copy plot code chunk here>
+
+
+**WRITE: Why might a larger fraction spawn late in one environment compared to another environment?** 
+
+**WRITE: What happened to the population this time? Use the figures to support your answer**
+
+
+---------------------------------------------------------------------------------------
+
+## Changes in survivorship
+
+Now suppose mortality increases. Re-set the age-4 value to its
+original value below. Then set the survival parameter to 0.2 (again, copy it over below
+and change the value so you're just changing it for this section of the report). Run 
+both models and plot them to compare (you can just copy over the code, like in the last
+question).
+
+
+
+
+```{r}
+# change params here
+```
+
+<copy code chunk here>
+
+**WRITE: What is one factor that might cause the survivorship to decrease?**
+
+**WRITE: How did the change in survivorship affect the projections of the model?**
+
+
+**WRITE: after this exercise, what parameters do you think are most important for you to find in the literature to add to your own PVA model?**
+
+
+**BONUS: change the options at the beginning of the document to hide the code itself from the final document by default. You can then change the settings on individual chunks if you want them to be in the report.**
+
+
+
+
+
+
+
+
+Adapted and written by Sarah Bolinger, 2023
+
+
+
+
+
+
