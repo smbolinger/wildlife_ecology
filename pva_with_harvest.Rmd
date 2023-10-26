@@ -1,0 +1,351 @@
+---
+title: "PVA with harvest"
+author: "Sarah Bolinger, Eric Tobin"
+date: "2023-10-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+####################################
+
+## Review
+
+
+Note the name of the dataframe (capt) and view the variables like we did above.
+
+```{r}
+# ufo <- read.csv("ufo_location_shape.csv")
+# ufo<- read.table(file=url("https://users.stat.ufl.edu/~winner/data/ufo_location_shape.csv") )
+ufo<- read_csv(file=url("https://users.stat.ufl.edu/~winner/data/ufo_location_shape.csv") )
+```
+
+*1.How would you make a simple table to show the total number of UFO sightings per country?*
+
+```{r}
+
+```
+
+
+*2. Change the plot below to show the frequency of different shapes of UFO that have been reported:*
+
+```{r}
+ggplot(ufo, mapping = aes(x=State)) +
+  geom_bar() +
+  coord_flip() +
+  theme(axis.text.x=element_text(size=5))
+```
+
+
+### R Review: Fish Encounter Data
+
+```{r}
+data("fish_encounters")
+```
+
+This data represents captures of fish at different stations as they swim downstream. This kind of tagging data is very common in wildlife ecology, whether for fish, birds, mammals, and even insects!
+
+The stations are in order from upstream (Release) to furthest downstream (MAW). Let make a table of the number of captures at each station. What happens as we get to stations further downstream?
+
+```{r}
+table(fish_encounters$station)
+```
+
+Now let's make a frequency distribution of the same data - the number of fish caught at each station. Note that the two ways of writing the plot code below produce identical results. If you prefer putting name of the data within the function call, you can do that instead of "piping" it in. Piping helps make the code more readable because it puts the name of the data first, so you may prefer that instead.
+
+```{r}
+ggplot(data=fish_encounters, aes(x=station)) +
+  geom_bar()
+
+fish_encounters |> ggplot(aes(x = station)) +
+  geom_bar()
+```
+
+*3. Edit the code below:*
+
+A simple way to visualize captures of each individual as they move downstream is to make a bar chart with a different color for each individual fish. I will demonstrate the code to add:
+
+```{r}
+fish_encounters |> ggplot(aes(x = station)) +
+  geom_bar() +
+
+```
+
+
+Now add the following code to your ggplot. Make sure it is indented the same amount as "geom_bar()".
+
+```{r}
+
+  # all of the code below is just to get the legend looking nice!
+  theme(legend.text = element_text(size=7),
+        legend.position = "top", 
+        legend.key.width = unit(0.3, units="cm")) +
+  guides(fill = guide_legend(nrow=1, label.position="bottom"))
+```
+
+*4. What do you notice about the fish as they move downstream?*
+
+This data has only a few individuals, but with more individuals we could begin to estimate things like population size, as well as rates like growth, reproduction, etc. Then we could plug that data into a PVA!
+
+
+## Population Viability Analysis: Review
+
+Let's refresh our memories on how to do Population Viability Analysis (PVA). This analysis is very common in wildlife management. We will build the model, input parameter estimates (like initial population size), and then run the model by calling the function (just like we did in our last lab).
+
+This is still a very simple PVA, and I encourage you to look in scientific literature for other types of PVAs and what they are used for. Remember that you will be running a model like this for your final project, but you WILL NOT have to write it from scratch.
+
+
+### Basic PVA model
+
+Specify the model equation:
+
+```{r}
+PVAdemo <- function(nreps, nyears, Init_N, R_max, K, Cat_prob, Cat_surv){
+  # browser()
+  PopArray2 <- array(0,dim=c((nyears+1),nreps))
+  
+  for(rep in 1:nreps){                            # start looping through replicates
+    
+    PopArray2[1,rep] <- Init_N                               # initial abundance
+    
+
+    for(y in 2:(nyears+1)){                                  # loop through years
+
+      nextyear <- max(0,trunc(NextYear(PopArray2[y-1,rep]))) # stochasticity + density-dep
+      
+      if(runif(1)<Flood_prob) nextyear <- nextyear*Flood_surv       # catastrophe
+        
+      PopArray2[y,rep] <- nextyear 
+      
+    }
+  }
+  
+  return(PopArray2)
+}
+```
+
+
+## RUN THE PVA MODEL
+
+### Enter parameters for the model:
+
+```{r}
+
+# Population params:
+R_max  <- 1.05       # Maximum rate of growth
+Init_N <- 500        # Initial abundance
+K      <- 175        # Carrying capacity
+
+# Stochasticity (standard deviation of lambda, the population growth rate in one time step)
+SD_lambda <- 0.11
+
+# Density-dependence (Ricker model)
+Ricker <- function(prev_abund){
+
+  prev_abund * exp(log(rnorm(1,R_max,SD_lambda))*(1-(prev_abund/K)))
+}
+
+```
+
+### Catastrophe
+
+Every year, there is some chance of catasrophe occurrence (such as a major flood, hurricane, etc.) and the severity of the catastrophe influences how many individuals will survive.
+
+For your species, look in the literature for: probability of catastrophe, survival rate. Then you can just replace the values below 
+
+
+
+*4. What is a catastrophe your species might face? Have you found any values that you could use in this analysis?*
+
+
+```{r}
+Cat_prob <- 0.05      # chance of catastrophe
+Cat_surv <- 0.9       # percent survival during catastrophe 
+```
+
+
+
+### Simulation parameters
+
+```{r}
+
+nyears  <- 100     # number of years
+nreps   <- 500     # number of replicates
+```
+
+### Run the model:
+
+```{r, warning=FALSE}
+
+Default <- PVAdemo(nreps,nyears,Init_N,R_max,K,Cat_prob, Cat_surv)
+
+# make output easier to view and add year column
+Default <- data.frame(year = seq(1, nyears + 1, by=1), Default) 
+Default[is.na(Default)] <- 0
+
+```
+
+
+
+## Incorporating harvest/hunting
+
+Today, we are adding harvest/hunting rates into the model to observe how they influence population growth.
+
+
+```{r}
+#######################################
+# Harvest / hunting
+#######################################
+
+Harvest_prob        <- 0.85     	# Percent (%) chance of some indiv. in a pop being hunted
+NonHarvested_indivs <- 0.90	      # Percentage of the population that avoids being harvested 
+
+#Think carefully about what each of these variables Represent. How does a higher or lower NonHarvested_indivs value affect population size?
+
+#MaxSustainableYield <- (r*K)/4	#this r is intrinsic growth rate, not pop growth rate
+```
+
+
+
+# ```{r}
+# #For multiple estimates of R
+# R1     <- 1.36
+# R2     <- 1.16
+# R3     <- 0.96
+# 
+# 
+# 
+# allR   <- c(R1, R2, R3)
+# sd(allR)
+# ```
+
+
+### Build a PVA with harvest:
+
+```{r}
+
+# Create the PVA model:
+
+PVAdemo_harvest <- function(nreps,nyears,Init_N,R_max,K,Harvest_prob,NonHarvested_indivs){
+
+  PopArray2 <- array( 0, dim=c( (nyears+1), nreps ) )
+  
+  ## start looping through replicates
+  
+  for(rep in 1:nreps){
+    
+    # set initial abundance
+    PopArray2[1,rep] <- Init_N     # initial abundance
+    
+    ### loop through years
+    for( y in 2:(  nyears+1  ) ){
+      ### stochasticity and density-dependence
+      nextyear <- max( 0,trunc(  Ricker(   PopArray2[y-1,rep]   )  ) )
+      
+      ### add in hunting. Next year's pop = current year * hunting survivors
+      if( runif(1)<Harvest_prob ) nextyear <- nextyear*NonHarvested_indivs
+      #What does runif do, and how is it used here? Can you tell me how it relates to the Harvest_prob value?
+      PopArray2[y,rep]                   <- nextyear 
+    }
+  }
+  #Output the population simulation values
+  return(PopArray2)
+}
+```
+
+
+```{r}
+### Run the PVA!
+Default <- PVAdemo(nreps,nyears,Init_N,R_max,K,Harvest_prob,NonHarvested_indivs)
+```
+
+
+## VISUALIZE YOUR DATA
+
+
+There are several types of visualizations that you might want to use for your PVA models: The first is to look at the "cloud" of population abundance trajectories. This gives us an idea of the general behavior of the models; look at the gestalt and ask yourself what is the overall trending behavior.
+
+### Make the plot cloud function:
+
+```{r}
+PlotCloud <- function(simdata){
+  plot( c(1:101), simdata[,1], col=gray(0.7), type="l", ylim=c( 0,max(simdata) ), xlab="Years", ylab="Abundance" )
+  
+  for(r in 2:ncol(simdata)){
+    lines( c(1:101), simdata[,r], col=gray(0.7), type="l" )
+  }
+}
+```
+
+*6. "simdata" is a placeholder for the data you will pass to this function. Look at our data and comment on this code to better understand how this function works. What are columns in our data? What are the rows?*
+
+### Run the plot cloud function:
+
+```{r}
+PlotCloud(Default)
+```
+
+#...This is easier to interpret than last time!
+
+If our question is about extinction risk, maybe we want to plot extinction risk by time
+
+```{r}
+Extinction_byyear <- function(simdata){
+  apply( simdata, 1, function(t)  length(which(t==0)))/ncol(simdata)
+}
+#What does the value "1" represent for function apply()? 
+
+plot( c(1:101), Extinction_byyear(Default), type="l", lwd=2, xlab="year", ylab="extinction risk" )
+```
+
+Or Maybe our question is about the probability of decline over 100 years (Note: This is VERY common in management -- the way managers evaluate endangered species listings is by determining what the population will look like in 30 years, 60 years, etc.).  In that case maybe we should present a histogram of final abundances
+```{r}
+hist( Default[nrow(Default),], xlab="Final population size at endpoint", ylab="Number of replicates",main="")
+abline( v=Init_N, col="blue", lwd=2 )
+hist( Default )
+```
+*7. Why was the other histogram blank? What is the second histogram telling us? What do each of these tell us?*
+
+
+Now we want to know about the effect of harvesting/hunting on extinction risk. Let's imagine that the *probability* of hunting occurring in a particular population is not expected to change across years (which makes sense -- hunters may visit the same sites each year; some sites are more accessible than others), but that the *intensity* of hunting may vary across years (this also makes sense -- e.g., weather conditions and the local economy influence both the desirability and success of hunting). Suppose that currently, hunting generally results in a 10% population reduction (90% of individuals survive). But more relaxed regulations could increase this number to as much as 40% (only 60% survive) or more. Let's look at how much this could increase extinction risk.
+```{r}
+Exctinction_risk <- function(simdata){
+  length( which(  simdata[nrow(simdata),]==0  ) )/ncol(simdata)
+}
+#How does which() work?
+```
+
+#######################################
+# Add hunting mortality
+#######################################
+
+Suppose that currently, there is a 5% population decline caused by over-hunting (lambda=0.95). Relaxed regulations lead to up to 40% declines (lambda=0.6). The uncertainty in the estimate means we have to allow for a range of conditions. We can do this by using "seq" to create a bunch of numbers that range from the first number we give (here, 0.95) to the second number (here, 0.6) in increments of the last number (here, 0.005).
+```{r}
+NonHarvested_indivs <- seq(0.95,0.6, by=-0.005)
+
+#This is exactly the same PVA as above, except now NonHarvested_indivs is not a constant, but a parameter that varies. We changed the content of this parameter so that now it is some unknown number in the range provided above. Now, we are putting the PVA inside a loop that tells R to run the PVA once for each value of NonHarvested_indivs in that range.
+all_scenarios       <- numeric( length(NonHarvested_indivs) )
+#Create a list to hold values for result of using different levels of harvesting.
+
+for(scenario in 1:length(NonHarvested_indivs)){
+  PVA                     <- PVAdemo( nreps, nyears, Init_N, R_max, K, Harvest_prob, NonHarvested_indivs[scenario] )
+  all_scenarios[scenario] <- Exctinction_risk(PVA)
+}
+```
+
+```{r}
+
+plot( NonHarvested_indivs, all_scenarios, type="p", cex=2, xlab="Proportion of population surviving harvest \n(inverse of hunting pressure)", ylab="Extinction risk", main = "Extinction risk at different levels of hunting pressure" )
+abline(h=0.10,col="darkseagreen",lwd=2)
+
+cat('These simulations were run with the following values:\nR_max=',R_max,'\nInitial population size=',Init_N,'\nAnd Carrying capacity=',K)
+```
+
+
+## Using real species data.
+
+*8. Using the real data, run the model with actual values from a catastrophe the species faces.
+
+
