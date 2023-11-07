@@ -1,0 +1,398 @@
+---
+title: "pva full"
+author: "Sarah Bolinger"
+date: "2023-11-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggpubr)
+```
+
+
+# POPULATION VIABILITY ANALYSIS SIMULATION
+
+*Population Viability Analysis (PVA)* is one of the most commonly used management practices. It takes parameter estimates (i.e., estimated numbers for processes that we care about, like birth rates, death rates, immigration & emigration) from the published literature to make predictions about what will happen to the population under different scenarios. 
+
+We are implementing a very simple PVA here, but more complex analyses can account for the degree of genetic variability, susceptibility to diseases, and other relevant measures of population health, or viability. Today, you are going to practice going through the analysis and learning what the parts do. 
+
+*NOTE* We will be using this model again in the future! For your final project, you will search the published literature for estimates of the parameters given here (e.g., R_max, Init_N), and put those into the model to perform a PVA for your chosen species.
+
+*You will want to run through the whole script once before answering questions on the lab report.* 
+
+There are packages for running PVA analyses, but you will often find it easier to troubleshoot if you have the code in front of you (even if you found it online and didn't write it yourself). Instead of just telling R "run this analysis," you can see what goes into the analysis and make sure it's doing what you want (and change it as needed).
+
+---------------------------------------------------------------------------------------
+
+## MODEL PARAMETERS 
+
+Before running the model, we will tell R what values to use for different parameters.
+
+**Parameters** is just a fancy way of saying "values we might change within the model" Some examples of parameters used in population models are:  
+
+
+*population rates* (e.g. growth rate, mortality rate, immigration rate)  
+
+*initial values* (here, the initial population size)
+
+*stochasticity* (values we choose to represent randomness in the environment or between individuals)
+
+*external factors* (e.g. probability of flood, storm, hunting, etc.)
+
+*population processes* (e.g. carrying capacity, density dependence)
+
+
+But remember that not all models will use all of these. Example: migration is difficult to measure in most species, and we may not have estimates. Or we may choose to create a simplified model depending on the question we are asking.
+
+
+### Basic life history parameters
+
+These are the most basic life history parameters for a population growth model. If you 
+use these without any environmental stochasticity or the scenarios below, you will get 
+the logistic growth curve you have seen in textbooks.
+
+```{r}
+R_max <- 1.05       # Maximum rate of growth
+Init_N <- 50        # Initial abundance
+K <- 175            # Carrying capacity
+```
+
+
+### Population growth function
+
+We need a way to calculate the population size at the next time step (Nt+1). We will use 
+the function NextYear, which incorporates density-dependence (Ricker model) and 
+environmental stochasticity (SD_lambda).
+
+Stochasticity - The lambda parameter is the population growth rate in one time step 
+(Nt+1/Nt). We add stochasticity by allowing lambda to vary a bit each year. The amount 
+of interannual variance depends on the standard deviation of lambda. 
+
+
+```{r}
+SD_lambda <- 0.11  # standard deviation of lambda
+
+NextYear <- function(prev_abund){       
+  prev_abund * exp(log(rnorm(1,R_max,SD_lambda))*(1-(prev_abund/K)))
+}
+
+```
+
+---------------------------------------------------------------------------------------
+
+## PARAMETERS FOR POSSIBLE SCENARIOS 
+
+
+### Age/stage structure
+
+In lab, we modeled age classes, but populations can be separated in other meaningful
+ways such as stage or size. 
+
+See the other file (pva_age_stage.Rmd) for the details on creating your analysis.
+
+
+
+### Effects of catastrophe (fire, flood, hurricane, etc.)
+
+If you are *not* including a catastrophe, leave these values set to 0.0
+
+If you *are* including a catastrophe, plug in the values you found in the literature.
+
+```{r}
+Cat_prob <- 0.0     # 5% chance of major flood
+Cat_surv <- 0.0    # 90% of population can survive a flood 
+
+# Cat_prob <- 0.05     # 5% chance of major flood
+# Cat_surv <- 0.9      # 90% of population can survive a flood 
+```
+
+
+
+### Effects of harvest/hunting
+
+As above, plug in your literature values only if you *are including hunting* in your PVA.
+
+Otherwise, you can leave these alone.
+
+```{r}
+
+Harvest_prob        <- 0.0     	# Percent (%) chance of some indiv. in a pop being hunted
+NonHarvested_indivs <- 0.0      # Percentage of the population that avoids being harvested 
+
+# Harvest_prob        <- 0.85     	# Percent (%) chance of some indiv. in a pop being hunted
+# NonHarvested_indivs <- 0.90	      # Percentage of the population that avoids being harvested 
+
+#Think carefully about what each of these variables Represent. How does a higher or lower NonHarvested_indivs value affect population size?
+
+#MaxSustainableYield <- (r*K)/4	#this r is intrinsic growth rate, not pop growth rate
+```
+
+---------------------------------------------------------------------------------------
+
+## SPECIFY THE PVA MODEL
+
+This is the generalized version of the PVA model. We give it the probability of the scenario and the survival rate of the scenario. In this case, scenario could be hunting/harvest, or catastrophe, or some other event that impacts survival.
+
+For each population replicate, the model runs through the years one by one. For each year, the model generates a random number to decide whether or not the given scenario occurs that year. If it does occur, then the population at time t+1 (nextyear) is dependent on the survival rate of the scenario (Scenario_surv). If not, then it is determined solely by the NextYear function we specified above.
+
+You shouldn't need to change any of this code; just change the parameter values above as needed.
+
+[R NOTE:If you want to look at the function step-by-step, enable the *browser* function below]
+
+```{r}
+
+# PVAdemo <- function(nreps, nyears, Init_N, R_max, K, Flood_prob, Flood_surv){
+PVAdemo <- function(nreps, nyears, Init_N, R_max, K, Scenario_prob, Scenario_surv){
+  # browser()
+  PopArray2 <- array(0,dim=c((nyears+1),nreps))
+  
+  for(rep in 1:nreps){                            # start looping through replicates
+    
+    PopArray2[1,rep] <- Init_N                               # initial abundance
+
+    for(y in 2:(nyears+1)){                                  # loop through years
+
+      nextyear <- max(0,trunc(NextYear(PopArray2[y-1,rep]))) 
+      
+      # If the scenario occurs, change next year's population number
+      if(runif(1)<Scenario_prob) nextyear <- nextyear*Scenario_surv       
+
+      PopArray2[y,rep] <- nextyear 
+      
+    }
+  }
+  
+  return(PopArray2)
+}
+
+# PVAdemo()
+```
+
+---------------------------------------------------------------------------------------
+
+## RUN THE PVA MODEL
+
+Run whichever model you are using, then transform it to a dataframe to make plotting
+easier. (They are really just the same model, but I wanted to keep the parameter names 
+consistent with the script we ran in class.)
+
+The if statement makes it so they won't run if you left the parameters at 0.0 (so if you 
+knit the document, R will only evaluate the option you gave it parameters for)
+
+
+
+### Basic simulation parameters   
+
+Tell R how long to run the model for (in years), and how many times to run it. You can 
+leave these as they are if they seem appropriate to your analysis/your population.
+
+```{r}
+nyears <-100     # number of years
+nreps <- 500      # number of replicates
+```
+
+
+
+### Option 1: Catastrophe model 
+
+```{r, warning=FALSE}
+
+if(Cat_prob>0) Pop_size <- PVAdemo(nreps,nyears,Init_N,R_max,K,Cat_prob,Cat_surv)
+
+# make output into dataframe and add year column. allows us to plot in ggplot2.
+Pop_size <- data.frame(year = seq(1, nyears + 1, by=1), Pop_size) 
+Pop_size[is.na(Pop_size)] <- 0  # replace the NAs with zeros so we don't get a warning
+
+```
+
+
+
+### Option 2: Harvest model
+
+```{r}
+
+if(Harvest_prob>0) Pop_size <- PVAdemo(nreps,nyears,Init_N,R_max,K,Harvest_prob,NonHarvested_indivs)
+
+# make output into dataframe and add year column. allows us to plot in ggplot2.
+Pop_size <- data.frame(year = seq(1, nyears + 1, by=1), Pop_size) 
+Pop_size[is.na(Pop_size)] <- 0  # replace the NAs with zeros so we don't get a warning
+
+```
+
+---------------------------------------------------------------------------------------
+
+## PLOT THE MODEL OUTPUT
+
+### Plot Cloud
+
+There are several types of visualizations that you might want to use for your PVA models. 
+
+The first is to look at the "cloud" of population abundance trajectories.  This isn't
+necessarily a plot you would use in an analysis, but it is a good way to see  how much 
+variation you are getting between replicates.
+
+We will first specify a function to plot the data, and then run the function. This means 
+we don't have to type out the plot code multiple times (we can just plug in the name of 
+the data to plot)
+
+```{r}
+plot_cloud <- function(simdata){
+  
+  dat <- vector("list", nreps)
+  p <- ggplot()
+  time <- seq(0, nyears, by = 1)
+  
+  for (i in seq(2,nreps)) {
+    s <- simdata[,i] 
+    dat[[i]] <- data.frame(t = time, s = s)
+    p <- p + geom_line(data = dat[[i]], mapping = aes(x = t, y = s), col = i)
+  } 
+  
+  return(p)
+}
+p <- plot_cloud(Pop_size)
+p #or print(p)
+```
+
+---------------------------------------------------------------------------------------
+
+## POPULATION OUTCOMES
+
+These are some of the measures we can use to assess population viability.
+
+One option for your PVA analysis is to examine the effect of different scenarios on one 
+or more of these outcomes.
+
+
+
+
+### 1. Probability of population decline 
+
+Maybe our question is about the **probability of decline over some time period** 
+
+(Note: This is VERY common in management -- the way managers evaluate endangered species
+listings is by determining what the population will look like in 30 years, 60 years, etc.)  
+
+In that case maybe we should present a histogram of final abundances (in other words,
+**looking at all the model runs, how many times did the population size at year 100 end up in each of the following bins?**):
+
+[R NOTE: This time we aren't making a function to make the plot, we're just making the plot]
+
+```{r}
+hist(as.numeric(Pop_size[nrow(Pop_size),]),xlab="Final population size at endpoint",ylab="Number of replicates",main="")
+# abline(v=Init_N,col="blue",lwd=2)
+```
+
+
+
+
+### 2. Extinction risk over time
+
+How does the probability of extinction change over the 100 year period?
+
+Extinction probability = What percent of our 500 replicates had a population size of 0 at time t (how likely is it for any one population to be extinct by that year)?
+
+Pay attention to the scale of the y-axis!
+
+
+
+Create the function:
+
+```{r}
+Extinction_byyear <- function(simdata){
+  apply(simdata,1,function(t)  length(which(t==0)))/ncol(simdata)
+}
+```
+
+Run the function and plot:
+
+```{r}
+ext <- data.frame(year = seq(0, nyears, by=1),ext = Extinction_byyear(Pop_size)) 
+
+ext |> ggplot(aes(x=year, y=ext)) +
+  geom_line() +
+  ylab("Extinction Risk")
+```
+
+
+
+
+### 3. Extinction risk at different levels of survival
+
+Make a list of different levels of survival and then calculate an extinction risk for each level. Then you can make a plot to look at how extinction risk changes as survival probability increases or decreases.
+
+The levels correspond to the proportion of the population that survives (percent survival). This is also a proxy for the *intensity* of the process (harvest or catastrophe).
+
+Create the function:
+
+```{r}
+Extinction_risk <- function(simdata){
+  length(which(simdata[nrow(simdata),]==0))/ncol(simdata)
+}
+```
+
+Create a list of percent survival values by entering the maximum and minimum values, and the interval you want between values
+
+Then create an empty list to store an extinction risk value corresponding to each percent survival value
+
+```{r}
+# list of possible flood survival probabilities
+# Percent_survival <- seq(0.9,0.15,by=-0.05) 
+
+minimum = 0.15
+maximum = 0.9
+interval = 0.05
+
+Percent_survival <- seq(minimum, maximum, by=interval) 
+
+# empty list to fill with extinction risk values
+all_scenarios <- numeric(length(Percent_survival))
+```
+
+Fill in the empty list with the extinction risks, then combine the two lists into a dataframe (one column for percent survival and one for corresponding extinction risk). Then combine the two lists into a dataframe (survivors).
+
+*If you are doing the hunting/harvest model, change Cat_prob in the code chunk below to Harvest_prob*
+
+```{r}
+
+for(scenario in 1:length(Percent_survival)){
+  PVA <- PVAdemo(nreps,nyears,Init_N,R_max,K,Cat_prob, Percent_survival[scenario])
+  all_scenarios[scenario] <- Extinction_risk(PVA)
+}
+
+survivors <- data.frame(scenario = all_scenarios, Percent_survival)
+```
+
+Plot extinction risk at different survival levels, then add a trendline with confidence intervals. 
+
+```{r}
+ggplot(survivors, aes(x=Percent_survival, y=scenario)) +
+  geom_point(shape=17, size=3, col="purple3")  +
+  ylab("Extinction Risk") +
+  xlab("Proportion of Individuals Surviving") +
+  geom_smooth(method="lm",
+              formula=y~x) + 
+  stat_regline_equation(label.x=0.8,aes(label=..rr.label..)) + 
+  stat_regline_equation(label.y=0.7,label.x=0.8,aes(label=..eq.label..))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
