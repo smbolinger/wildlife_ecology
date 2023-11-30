@@ -1,0 +1,115 @@
+---
+title: "lab final BIOL 309"
+author: "-your name-"
+date: "2023-11-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# INSTRUCTIONS
+
+Each group will be assigned a different study from the primary literature. As a group, you will choose one question from the paper to answer with your analysis. Once I have approved your group's question, you may start on the activity.
+
+Use previous class materials to construct and run a PVA, and then examine the output. Your document should contain the following:
+
+1. Answer to your specific question
+2. Extinction risk and probability of decline of the population in 50 years
+
+You will work as a group, but each group member will make their own individual document using this script. Click "Knit" to save to PDF or Word document. 
+
+Then answer the questions in the Word document.
+
+
+-------------------------------------------------------------------------------
+
+# BACKGROUNG INFO
+
+*Fill in the following*
+
+Species:
+
+Location:
+
+Main threats:
+
+Question to answer:
+
+
+-------------------------------------------------------------------------------
+
+# PARAMETERS
+
+What parameters do you need for your model? 
+
+- Parameters for population dynamics
+- Parameters specific to your question
+
+```{r}
+
+```
+
+-------------------------------------------------------------------------------
+
+# SPECIFY THE MODEL
+
+Choose one of the models we used in class to answer your question. Paste it here.
+
+```{r}
+
+```
+
+-------------------------------------------------------------------------------
+
+# RUN THE MODEL
+
+Run the model function, using your parameters as the arguments (the things in parentheses)
+
+```{r}
+
+```
+
+-------------------------------------------------------------------------------
+
+# OUTPUT 
+
+First, choose the output that makes sense to answer your chosen question. What measure of population viability would you use? Paste the appropriate code below to create graphs of this measure.
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+-------------------------------------------------------------------------------
+
+# EXTINCTION RISK
+
+```{r}
+
+```
+
+
+-------------------------------------------------------------------------------
+
+# PROBABILITY OF DECLINE
+
+```{r}
+
+```
+
+
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
